@@ -9,6 +9,11 @@ pipeline {
     string(name: 'GIT_COMMIT_SHA', defaultValue: '', description: 'Commit SHA that passed the main Jenkins checks.')
   }
 
+  environment {
+    BUILDKIT_HOST = 'tcp://buildkit.jenkins.svc.cluster.local:1234'
+    PWA_IMAGE = 'ghcr.io/chahua-im/chahua-pwa'
+  }
+
   stages {
     stage('Validate Input') {
       steps {
@@ -29,6 +34,16 @@ spec:
   containers:
     - name: node
       image: node:22-bookworm
+      command:
+        - cat
+      tty: true
+    - name: docker
+      image: docker:27-cli
+      env:
+        - name: HOME
+          value: /home/jenkins/agent
+        - name: DOCKER_CONFIG
+          value: /home/jenkins/agent/.docker
       command:
         - cat
       tty: true
@@ -83,6 +98,45 @@ npx vite build -c vite.config.staging.ts --mode development
               }
             }
 
+            stage('Image') {
+              steps {
+                container('docker') {
+                  withCredentials([usernamePassword(credentialsId: 'ghcr', usernameVariable: 'GHCR_USERNAME', passwordVariable: 'GHCR_TOKEN')]) {
+                    dir('wetty-chat-mobile') {
+                      sh '''#!/usr/bin/env sh
+set -eu
+
+COMMIT_TAG="$(git rev-parse HEAD)"
+
+docker buildx create \
+  --name chahua-builder \
+  --driver remote \
+  "$BUILDKIT_HOST" \
+  --use || docker buildx use chahua-builder
+
+docker buildx inspect --bootstrap
+
+printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --build-arg CI_BUILD_VERSION="PWA-${BUILD_NUMBER}" \
+  --cache-from "type=registry,ref=${PWA_IMAGE}:buildcache" \
+  --cache-to "type=registry,ref=${PWA_IMAGE}:buildcache,mode=max" \
+  -t "${PWA_IMAGE}:${BUILD_NUMBER}" \
+  -t "${PWA_IMAGE}:${COMMIT_TAG}" \
+  --provenance=false \
+  --push \
+  .
+
+docker logout ghcr.io || true
+                      '''
+                    }
+                  }
+                }
+              }
+            }
+
             stage('Prod') {
               steps {
                 dir('wetty-chat-mobile') {
@@ -111,11 +165,14 @@ rm -f chahua-staging.zip chahua-prod.zip
             }
 
             script {
+              def pwaImage = "ghcr.io/chahua-im/chahua-pwa:${env.GIT_COMMIT}"
+
               writeFile file: 'pwa-artifact-metadata.json',
                 text: """{
   "buildNumber": "${env.BUILD_NUMBER}",
   "commitSha": "${env.GIT_COMMIT}",
-  "sourceRef": "${env.PWA_BUILD_REF}"
+  "sourceRef": "${env.PWA_BUILD_REF}",
+  "pwaImage": "${pwaImage}"
 }
 """
             }
