@@ -76,11 +76,6 @@ spec:
 set -euo pipefail
 
 npm ci
-
-if ! command -v zip >/dev/null; then
-  apt-get update
-  apt-get install -y --no-install-recommends zip
-fi
               '''
             }
           }
@@ -109,6 +104,7 @@ npx vite build -c vite.config.staging.ts --mode development
                       sh '''#!/usr/bin/env sh
 set -eu
 
+git config --global --add safe.directory "$WORKSPACE"
 COMMIT_TAG="$(git rev-parse HEAD)"
 
 docker buildx create \
@@ -157,15 +153,13 @@ npx vite build --base=/ --outDir prod-dist -c vite.config.prod.ts
 
         stage('Archive') {
           steps {
-            dir('wetty-chat-mobile') {
-              sh '''#!/usr/bin/env bash
-set -euo pipefail
+            zip zipFile: 'wetty-chat-mobile/chahua-staging.zip',
+              dir: 'wetty-chat-mobile/dist',
+              archive: false
 
-rm -f chahua-staging.zip chahua-prod.zip
-(cd dist && zip -qr ../chahua-staging.zip .)
-(cd prod-dist && zip -qr ../chahua-prod.zip .)
-              '''
-            }
+            zip zipFile: 'wetty-chat-mobile/chahua-prod.zip',
+              dir: 'wetty-chat-mobile/prod-dist',
+              archive: false
 
             script {
               def pwaImage = "ghcr.io/chahua-im/chahua-pwa:${env.GIT_COMMIT}"
