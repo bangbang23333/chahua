@@ -250,11 +250,10 @@ async fn get_messages(
         let older_to_use: Vec<Message> = older_rows.into_iter().take(half as usize).collect();
         let newer_to_use: Vec<Message> = newer_rows.into_iter().take((half + 1) as usize).collect();
 
-        // next_cursor = oldest id (for loading older), prev_cursor = newest id (for loading newer)
-        let next_cursor = has_older
+        let older_cursor = has_older
             .then(|| older_to_use.last().map(|m| m.id))
             .flatten();
-        let prev_cursor = has_newer
+        let newer_cursor = has_newer
             .then(|| newer_to_use.last().map(|m| m.id))
             .flatten();
 
@@ -266,8 +265,10 @@ async fn get_messages(
 
         return Ok(Json(ListMessagesResponse {
             messages: messages_vec,
-            next_cursor,
-            prev_cursor,
+            next_cursor: older_cursor,
+            prev_cursor: newer_cursor,
+            older_cursor,
+            newer_cursor,
         }));
     }
 
@@ -282,7 +283,7 @@ async fn get_messages(
 
         let has_more = rows.len() as i64 > max;
         let messages_to_process: Vec<Message> = rows.into_iter().take(max as usize).collect();
-        let prev_cursor = has_more
+        let newer_cursor = has_more
             .then(|| messages_to_process.last().map(|m| m.id))
             .flatten();
 
@@ -291,7 +292,9 @@ async fn get_messages(
         return Ok(Json(ListMessagesResponse {
             messages: messages_vec,
             next_cursor: None,
-            prev_cursor,
+            prev_cursor: newer_cursor,
+            older_cursor: None,
+            newer_cursor,
         }));
     }
 
@@ -312,7 +315,7 @@ async fn get_messages(
 
     let has_more = rows.len() as i64 > max;
     let messages_to_process: Vec<Message> = rows.into_iter().take(max as usize).collect();
-    let next_cursor = has_more
+    let older_cursor = has_more
         .then(|| messages_to_process.last().map(|m| m.id))
         .flatten();
 
@@ -323,8 +326,10 @@ async fn get_messages(
 
     Ok(Json(ListMessagesResponse {
         messages: messages_vec,
-        next_cursor,
+        next_cursor: older_cursor,
         prev_cursor: None,
+        older_cursor,
+        newer_cursor: None,
     }))
 }
 

@@ -57,12 +57,28 @@ pub struct MessageResponse {
 #[serde(rename_all = "camelCase")]
 pub struct ListMessagesResponse {
     pub messages: Vec<MessageResponse>,
+    /// Deprecated: use `older_cursor` / `olderCursor` instead.
+    ///
+    /// This is the cursor to fetch older messages with the `before` query
+    /// parameter. It remains during the API transition for compatibility.
     #[serde(with = "crate::serde_i64_string::opt")]
     #[schema(value_type = Option<String>)]
     pub next_cursor: Option<i64>,
+    /// Deprecated: use `newer_cursor` / `newerCursor` instead.
+    ///
+    /// This is the cursor to fetch newer messages with the `after` query
+    /// parameter. It remains during the API transition for compatibility.
     #[serde(with = "crate::serde_i64_string::opt")]
     #[schema(value_type = Option<String>)]
     pub prev_cursor: Option<i64>,
+    /// Cursor to fetch older messages with the `before` query parameter.
+    #[serde(with = "crate::serde_i64_string::opt")]
+    #[schema(value_type = Option<String>)]
+    pub older_cursor: Option<i64>,
+    /// Cursor to fetch newer messages with the `after` query parameter.
+    #[serde(with = "crate::serde_i64_string::opt")]
+    #[schema(value_type = Option<String>)]
+    pub newer_cursor: Option<i64>,
 }
 
 #[derive(Serialize, utoipa::ToSchema)]
@@ -162,4 +178,34 @@ pub struct MessageStickerResponse {
     pub created_at: DateTime<Utc>,
     pub is_favorited: bool,
     pub media: StickerMediaResponse,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ListMessagesResponse;
+    use serde_json::json;
+
+    #[test]
+    fn list_messages_response_serializes_directional_cursor_aliases() {
+        let response = ListMessagesResponse {
+            messages: vec![],
+            next_cursor: Some(10),
+            prev_cursor: Some(20),
+            older_cursor: Some(10),
+            newer_cursor: Some(20),
+        };
+
+        let value = serde_json::to_value(response).expect("serialize response");
+
+        assert_eq!(
+            value,
+            json!({
+                "messages": [],
+                "nextCursor": "10",
+                "prevCursor": "20",
+                "olderCursor": "10",
+                "newerCursor": "20"
+            })
+        );
+    }
 }
