@@ -2,8 +2,8 @@ import type { MessageResponse } from '@/api/messages';
 
 export interface MessageSegment {
   messages: MessageResponse[];
-  nextCursor: string | null;
-  prevCursor: string | null;
+  olderCursor: string | null;
+  newerCursor: string | null;
 }
 
 export interface ChatTimelineState {

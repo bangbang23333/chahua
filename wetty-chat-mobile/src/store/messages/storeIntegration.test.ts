@@ -57,8 +57,8 @@ describe('message listener projections', () => {
         chatId: '1',
         targetMessageId: '10',
         messages: [testMessage('10')],
-        nextCursor: '10',
-        prevCursor: '10',
+        olderCursor: '10',
+        newerCursor: '10',
       }),
     );
     store.dispatch(
@@ -81,8 +81,8 @@ describe('message listener projections', () => {
         chatId: '1',
         targetMessageId: '10',
         messages: [testMessage('10'), testMessage('11')],
-        nextCursor: '10',
-        prevCursor: null,
+        olderCursor: '10',
+        newerCursor: null,
       }),
     );
     store.dispatch(

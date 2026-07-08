@@ -7,8 +7,8 @@ This note documents edge cases around the main chat timeline, history browsing, 
 - Chat messages are held in Redux memory, not persisted to IndexedDB.
 - Each chat has one or more message windows and one `activeWindowIndex`.
 - The UI renders only the active window via `selectMessagesForChat`.
-- `nextCursor` loads older messages above the active window.
-- `prevCursor` loads newer messages below a centered or historical active window.
+- `olderCursor` loads older messages above the active window.
+- `newerCursor` loads newer messages below a centered or historical active window.
 - Websocket and optimistic messages are inserted into the chronologically latest window.
 - Server-confirmed messages are ordered primarily by numeric message id, with timestamp fallback for optimistic or non-numeric ids.
 

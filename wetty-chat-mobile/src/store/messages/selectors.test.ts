@@ -27,8 +27,8 @@ describe('message timeline selectors', () => {
       refreshLatest({
         chatId: '1',
         messages: [testMessage('20'), testMessage('21')],
-        nextCursor: '20',
-        prevCursor: null,
+        olderCursor: '20',
+        newerCursor: null,
       }),
     );
     next = reducer(
@@ -37,8 +37,8 @@ describe('message timeline selectors', () => {
         chatId: '1',
         targetMessageId: '10',
         messages: [testMessage('10')],
-        nextCursor: 'older-cursor',
-        prevCursor: 'newer-cursor',
+        olderCursor: 'older-cursor',
+        newerCursor: 'newer-cursor',
       }),
     );
 
@@ -54,6 +54,26 @@ describe('message timeline selectors', () => {
     expect(ids(selectActiveTimelineMessages(testRootState(next), '1'))).toEqual(['20', '21']);
   });
 
+  it('stores directional timeline cursor names from server pages', () => {
+    const next = reducer(
+      undefined,
+      insertAround({
+        chatId: '1',
+        targetMessageId: '10',
+        messages: [testMessage('10')],
+        olderCursor: 'older-cursor',
+        newerCursor: 'newer-cursor',
+      }),
+    );
+
+    expect(next.chats['1'].segments[0]).toMatchObject({
+      olderCursor: 'older-cursor',
+      newerCursor: 'newer-cursor',
+    });
+    expect(selectOlderAnchor(testRootState(next), '1')).toBe('older-cursor');
+    expect(selectNewerAnchor(testRootState(next), '1')).toBe('newer-cursor');
+  });
+
   it('selects all loaded timeline messages and latest thread reply', () => {
     const next = reducer(
       undefined,
@@ -63,8 +83,8 @@ describe('message timeline selectors', () => {
           testMessage('12', 'client-12', { replyRootId: '10' }),
           testMessage('11', 'client-11', { replyRootId: '10' }),
         ],
-        nextCursor: null,
-        prevCursor: null,
+        olderCursor: null,
+        newerCursor: null,
       }),
     );
 
@@ -79,8 +99,8 @@ describe('message timeline selectors', () => {
         chatId: '1',
         targetMessageId: '10',
         messages: [testMessage('10')],
-        nextCursor: '10',
-        prevCursor: '10',
+        olderCursor: '10',
+        newerCursor: '10',
       }),
     );
     next = reducer(next, applyRealtimeMessage({ chatId: '1', message: testMessage('20') }));
@@ -93,8 +113,8 @@ describe('message timeline selectors', () => {
         chatId: '1',
         targetMessageId: '10',
         messages: [testMessage('10')],
-        nextCursor: '10',
-        prevCursor: '10',
+        olderCursor: '10',
+        newerCursor: '10',
       }),
     );
     next = reducer(next, applyRealtimeMessage({ chatId: '1', message: testMessage('21') }));

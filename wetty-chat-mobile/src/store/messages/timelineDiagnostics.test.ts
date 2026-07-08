@@ -11,8 +11,8 @@ describe('timeline diagnostics', () => {
         chatId: '1',
         targetMessageId: '10',
         messages: [testMessage('10'), testMessage('11')],
-        nextCursor: 'older-cursor',
-        prevCursor: null,
+        olderCursor: 'older-cursor',
+        newerCursor: null,
       }),
     );
     next = reducer(next, applyRealtimeMessage({ chatId: '1', message: testMessage('12') }));
@@ -25,8 +25,8 @@ describe('timeline diagnostics', () => {
           firstId: '10',
           lastId: '12',
           count: 3,
-          nextCursor: 'older-cursor',
-          prevCursor: null,
+          olderCursor: 'older-cursor',
+          newerCursor: null,
         },
       ],
       activeMessageCount: 3,

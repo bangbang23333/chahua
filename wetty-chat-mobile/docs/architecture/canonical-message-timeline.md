@@ -112,10 +112,12 @@ The backend API uses snowflake message ids as anchors:
 - `after: messageId`: fetch newer messages strictly after the anchor.
 - `around: messageId`: fetch a page centered around or near a target message.
 
-If the backend continues to expose fields named `nextCursor` and `prevCursor`, clients should treat them consistently:
+The backend exposes directional cursor fields:
 
-- If cursors are message ids, prefer naming them as message id anchors in client code.
-- If cursors ever become opaque, clients must store and replay the returned cursor values instead of deriving anchors from rendered messages.
+- `olderCursor`: replay with `before` to fetch older messages.
+- `newerCursor`: replay with `after` to fetch newer messages.
+
+If cursors ever become opaque, clients must store and replay the returned cursor values instead of deriving anchors from rendered messages.
 
 ## Operations
 

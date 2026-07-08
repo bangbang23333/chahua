@@ -38,8 +38,8 @@ export function collectTimelineSnapshot(state: MessageStateRoot, storeChatId: st
     segments:
       chat?.segments.map((segment) => ({
         ...summarizeMessageRange(segment.messages),
-        nextCursor: segment.nextCursor,
-        prevCursor: segment.prevCursor,
+        olderCursor: segment.olderCursor,
+        newerCursor: segment.newerCursor,
       })) ?? [],
     activeMessageCount: activeMessages.length,
     activeFirstId: activeMessages[0]?.id ?? null,

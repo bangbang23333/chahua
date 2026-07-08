@@ -31,26 +31,26 @@ export function selectCanLoadOlder(state: { messages: MessagesState }, chatId: s
   const chat = state.messages.chats[chatId];
   const segment = activeSegment(chat, state.messages.views[chatId]);
   if (!chat || !segment) return false;
-  return segment.nextCursor !== null || segment !== chat.segments[0] || !chat.hasReachedOldest;
+  return segment.olderCursor !== null || segment !== chat.segments[0] || !chat.hasReachedOldest;
 }
 
 export function selectCanLoadNewer(state: { messages: MessagesState }, chatId: string): boolean {
   const chat = state.messages.chats[chatId];
   const segment = activeSegment(chat, state.messages.views[chatId]);
   if (!chat || !segment) return false;
-  return segment.prevCursor !== null || segment !== latestSegment(chat) || !chat.hasReachedLatest;
+  return segment.newerCursor !== null || segment !== latestSegment(chat) || !chat.hasReachedLatest;
 }
 
 export function selectOlderAnchor(state: { messages: MessagesState }, chatId: string): string | null {
   const chat = state.messages.chats[chatId];
   const segment = activeSegment(chat, state.messages.views[chatId]);
-  return segment?.nextCursor ?? segment?.messages[0]?.id ?? null;
+  return segment?.olderCursor ?? segment?.messages[0]?.id ?? null;
 }
 
 export function selectNewerAnchor(state: { messages: MessagesState }, chatId: string): string | null {
   const chat = state.messages.chats[chatId];
   const segment = activeSegment(chat, state.messages.views[chatId]);
-  return segment?.prevCursor ?? segment?.messages[segment.messages.length - 1]?.id ?? null;
+  return segment?.newerCursor ?? segment?.messages[segment.messages.length - 1]?.id ?? null;
 }
 
 export function selectPendingLiveCount(state: { messages: MessagesState }, chatId: string): number {

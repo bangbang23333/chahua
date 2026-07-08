@@ -31,7 +31,7 @@ import type { ChatTimelineState, MessagesState, TimelineMode, TimelineViewState 
 function isActiveViewAtLatestEdge(chat: ChatTimelineState, view: TimelineViewState): boolean {
   if (!chat.hasReachedLatest) return false;
   if (view.mode.type === 'latest') return true;
-  return activeSegment(chat, view)?.prevCursor === null;
+  return activeSegment(chat, view)?.newerCursor === null;
 }
 
 const initialState: MessagesState = {
@@ -46,17 +46,22 @@ const messagesSlice = createSlice({
     resetChat(
       state,
       action: {
-        payload: { chatId: string; messages: MessageResponse[]; nextCursor: string | null; prevCursor: string | null };
+        payload: {
+          chatId: string;
+          messages: MessageResponse[];
+          olderCursor: string | null;
+          newerCursor: string | null;
+        };
       },
     ) {
-      const { chatId, messages, nextCursor, prevCursor } = action.payload;
+      const { chatId, messages, olderCursor, newerCursor } = action.payload;
       const prevGen = state.chats[chatId]?.generation ?? 0;
-      const segment = makeServerSegment(messages, nextCursor, prevCursor);
+      const segment = makeServerSegment(messages, olderCursor, newerCursor);
       state.chats[chatId] = {
         segments: segment ? [segment] : [],
         optimisticMessages: [],
-        hasReachedOldest: nextCursor === null,
-        hasReachedLatest: prevCursor === null,
+        hasReachedOldest: olderCursor === null,
+        hasReachedLatest: newerCursor === null,
         generation: prevGen + 1,
       };
       state.views[chatId] = { mode: DEFAULT_TIMELINE_MODE, pendingLiveMessageIds: [] };
@@ -77,12 +82,17 @@ const messagesSlice = createSlice({
     refreshLatest(
       state,
       action: {
-        payload: { chatId: string; messages: MessageResponse[]; nextCursor: string | null; prevCursor: string | null };
+        payload: {
+          chatId: string;
+          messages: MessageResponse[];
+          olderCursor: string | null;
+          newerCursor: string | null;
+        };
       },
     ) {
-      const { chatId, messages, nextCursor, prevCursor } = action.payload;
+      const { chatId, messages, olderCursor, newerCursor } = action.payload;
       const chat = getChat(state, chatId);
-      const segment = makeServerSegment(messages, nextCursor, prevCursor);
+      const segment = makeServerSegment(messages, olderCursor, newerCursor);
       const fetchedClientIds = new Set(messages.map((message) => message.clientGeneratedId).filter(Boolean));
       chat.optimisticMessages = chat.optimisticMessages.filter(
         (message) => !message.clientGeneratedId || !fetchedClientIds.has(message.clientGeneratedId),
@@ -91,7 +101,7 @@ const messagesSlice = createSlice({
         chat.segments = normalizeLatestSegments(chat.segments, segment);
       }
       chat.hasReachedLatest = true;
-      chat.hasReachedOldest = nextCursor === null || chat.hasReachedOldest;
+      chat.hasReachedOldest = olderCursor === null || chat.hasReachedOldest;
       chat.generation++;
       const view = getView(state, chatId);
       view.mode = DEFAULT_TIMELINE_MODE;
@@ -105,18 +115,18 @@ const messagesSlice = createSlice({
           chatId: string;
           targetMessageId: string;
           messages: MessageResponse[];
-          nextCursor: string | null;
-          prevCursor: string | null;
+          olderCursor: string | null;
+          newerCursor: string | null;
         };
       },
     ) {
-      const { chatId, targetMessageId, messages, nextCursor, prevCursor } = action.payload;
-      const segment = makeServerSegment(messages, nextCursor, prevCursor);
+      const { chatId, targetMessageId, messages, olderCursor, newerCursor } = action.payload;
+      const segment = makeServerSegment(messages, olderCursor, newerCursor);
       if (!segment) return;
       const chat = getChat(state, chatId);
-      const hasReachedLatest = prevCursor === null;
+      const hasReachedLatest = newerCursor === null;
       chat.segments = normalizeAroundSegments(chat.segments, segment, { hasReachedLatest });
-      chat.hasReachedOldest = nextCursor === null || chat.hasReachedOldest;
+      chat.hasReachedOldest = olderCursor === null || chat.hasReachedOldest;
       chat.hasReachedLatest = hasReachedLatest || chat.hasReachedLatest;
       chat.generation++;
       getView(state, chatId).mode = { type: 'around', targetMessageId };
@@ -125,37 +135,37 @@ const messagesSlice = createSlice({
     insertBeforeAnchor(
       state,
       action: {
-        payload: { chatId: string; anchorMessageId: string; messages: MessageResponse[]; nextCursor: string | null };
+        payload: { chatId: string; anchorMessageId: string; messages: MessageResponse[]; olderCursor: string | null };
       },
     ) {
-      const { chatId, anchorMessageId, messages, nextCursor } = action.payload;
+      const { chatId, anchorMessageId, messages, olderCursor } = action.payload;
       const segment = makeServerSegment(
         messages.filter((message) => compareMessageOrder(message, { id: anchorMessageId }) < 0),
-        nextCursor,
+        olderCursor,
         anchorMessageId,
       );
       const chat = getChat(state, chatId);
       if (segment) {
         chat.segments = normalizeBeforeAnchorSegments(chat.segments, segment, anchorMessageId);
       }
-      chat.hasReachedOldest = nextCursor === null || chat.hasReachedOldest;
+      chat.hasReachedOldest = olderCursor === null || chat.hasReachedOldest;
       chat.generation++;
     },
 
     insertAfterAnchor(
       state,
       action: {
-        payload: { chatId: string; anchorMessageId: string; messages: MessageResponse[]; prevCursor: string | null };
+        payload: { chatId: string; anchorMessageId: string; messages: MessageResponse[]; newerCursor: string | null };
       },
     ) {
-      const { chatId, anchorMessageId, messages, prevCursor } = action.payload;
+      const { chatId, anchorMessageId, messages, newerCursor } = action.payload;
       const segment = makeServerSegment(
         messages.filter((message) => compareMessageOrder(message, { id: anchorMessageId }) > 0),
         anchorMessageId,
-        prevCursor,
+        newerCursor,
       );
       const chat = getChat(state, chatId);
-      const hasReachedLatest = prevCursor === null;
+      const hasReachedLatest = newerCursor === null;
       if (segment) {
         chat.segments = normalizeAfterAnchorSegments(chat.segments, segment, anchorMessageId, { hasReachedLatest });
       }

@@ -66,7 +66,7 @@ function emptyState(messages: MessageResponse[] = []): RootState {
         messages.length > 0
           ? {
               'chat-1': {
-                segments: [{ messages, nextCursor: 'old-cursor', prevCursor: null }],
+                segments: [{ messages, olderCursor: 'old-cursor', newerCursor: null }],
                 optimisticMessages: [],
                 hasReachedOldest: false,
                 hasReachedLatest: true,
@@ -138,7 +138,7 @@ describe('useConversationTimeline', () => {
     fakeState = emptyState();
     showToast = vi.fn();
     vi.mocked(getMessages).mockResolvedValue(
-      response({ messages: [message('10'), message('11')], nextCursor: '10', prevCursor: null }),
+      response({ messages: [message('10'), message('11')], olderCursor: '10', newerCursor: null }),
     );
     vi.mocked(getThreadReadState).mockResolvedValue(response({ lastReadMessageId: '9' }));
   });
@@ -158,7 +158,7 @@ describe('useConversationTimeline', () => {
     expect(dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'messages/refreshLatest',
-        payload: { chatId: 'chat-1', messages: [message('10'), message('11')], nextCursor: '10', prevCursor: null },
+        payload: { chatId: 'chat-1', messages: [message('10'), message('11')], olderCursor: '10', newerCursor: null },
       }),
     );
     expect(dispatch).toHaveBeenCalledWith(
@@ -171,7 +171,7 @@ describe('useConversationTimeline', () => {
 
   it('anchors to the resume target when the around window contains it', async () => {
     vi.mocked(getMessages).mockResolvedValue(
-      response({ messages: [message('19'), message('20'), message('21')], nextCursor: '19', prevCursor: '21' }),
+      response({ messages: [message('19'), message('20'), message('21')], olderCursor: '19', newerCursor: '21' }),
     );
 
     await renderHook({ initialResumeMessageId: '20' });
@@ -184,8 +184,8 @@ describe('useConversationTimeline', () => {
           chatId: 'chat-1',
           targetMessageId: '20',
           messages: [message('19'), message('20'), message('21')],
-          nextCursor: '19',
-          prevCursor: '21',
+          olderCursor: '19',
+          newerCursor: '21',
         },
       }),
     );
@@ -198,7 +198,7 @@ describe('useConversationTimeline', () => {
     // The anchor must degrade to the newest message instead of stranding the
     // scroll position on a phantom row.
     vi.mocked(getMessages).mockResolvedValue(
-      response({ messages: [message('10'), message('11')], nextCursor: '10', prevCursor: null }),
+      response({ messages: [message('10'), message('11')], olderCursor: '10', newerCursor: null }),
     );
 
     await renderHook({ initialResumeMessageId: '20' });
@@ -226,7 +226,7 @@ describe('useConversationTimeline', () => {
           chatId: 'chat-1',
           anchorMessageId: 'old-cursor',
           messages: [message('10'), message('11')],
-          nextCursor: '10',
+          olderCursor: '10',
         },
       }),
     );

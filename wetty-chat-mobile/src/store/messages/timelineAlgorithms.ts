@@ -96,12 +96,12 @@ export function allLoadedMessages(chat: ChatTimelineState | undefined): MessageR
 
 export function makeServerSegment(
   messages: MessageResponse[],
-  nextCursor: string | null,
-  prevCursor: string | null,
+  olderCursor: string | null,
+  newerCursor: string | null,
 ): MessageSegment | null {
   const serverMessages = dedupeMessages(messages.filter((message) => !isOptimisticMessage(message)));
   if (serverMessages.length === 0) return null;
-  return { messages: serverMessages, nextCursor, prevCursor };
+  return { messages: serverMessages, olderCursor, newerCursor };
 }
 
 export function normalizeSegmentMessages(segment: MessageSegment): MessageSegment | null {
@@ -145,18 +145,18 @@ export function segmentStartsAfter(segment: MessageSegment, messageId: string): 
 
 function segmentFromMessages(
   messages: MessageResponse[],
-  nextCursor: string | null,
-  prevCursor: string | null,
+  olderCursor: string | null,
+  newerCursor: string | null,
 ): MessageSegment | null {
   const deduped = dedupeMessages(messages);
   if (deduped.length === 0) return null;
-  return { messages: deduped, nextCursor, prevCursor };
+  return { messages: deduped, olderCursor, newerCursor };
 }
 
 function messagesBefore(segment: MessageSegment, messageId: string): MessageSegment | null {
   return segmentFromMessages(
     segment.messages.filter((message) => messageIdBefore(message, messageId)),
-    segment.nextCursor,
+    segment.olderCursor,
     messageId,
   );
 }
@@ -164,7 +164,7 @@ function messagesBefore(segment: MessageSegment, messageId: string): MessageSegm
 function messagesThrough(segment: MessageSegment, messageId: string): MessageSegment | null {
   return segmentFromMessages(
     segment.messages.filter((message) => messageIdAtOrBefore(message, messageId)),
-    segment.nextCursor,
+    segment.olderCursor,
     messageId,
   );
 }
@@ -173,7 +173,7 @@ function messagesFrom(segment: MessageSegment, messageId: string): MessageSegmen
   return segmentFromMessages(
     segment.messages.filter((message) => messageIdAtOrAfter(message, messageId)),
     messageId,
-    segment.prevCursor,
+    segment.newerCursor,
   );
 }
 
@@ -181,7 +181,7 @@ function messagesAfter(segment: MessageSegment, messageId: string): MessageSegme
   return segmentFromMessages(
     segment.messages.filter((message) => messageIdAfter(message, messageId)),
     messageId,
-    segment.prevCursor,
+    segment.newerCursor,
   );
 }
 
@@ -189,8 +189,8 @@ function concatenateSegments(left: MessageSegment, right: MessageSegment | null)
   if (!right) return left;
   return {
     messages: dedupeMessages([...left.messages, ...right.messages]),
-    nextCursor: left.nextCursor,
-    prevCursor: right.prevCursor,
+    olderCursor: left.olderCursor,
+    newerCursor: right.newerCursor,
   };
 }
 
@@ -403,7 +403,7 @@ export function insertServerMessageIntoLatest(chat: ChatTimelineState, message: 
   removeLogicalMessage(chat, message);
   const latest = latestSegment(chat);
   if (!latest) {
-    chat.segments = [{ messages: [message], nextCursor: null, prevCursor: null }];
+    chat.segments = [{ messages: [message], olderCursor: null, newerCursor: null }];
     return;
   }
   latest.messages = dedupeMessages([...latest.messages, message]);

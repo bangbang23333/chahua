@@ -31,7 +31,12 @@ describe('messages slice canonical reducers', () => {
   it('refreshes latest into an empty timeline', () => {
     const next = reducer(
       undefined,
-      refreshLatest({ chatId: '1', messages: [testMessage('2'), testMessage('1')], nextCursor: '1', prevCursor: null }),
+      refreshLatest({
+        chatId: '1',
+        messages: [testMessage('2'), testMessage('1')],
+        olderCursor: '1',
+        newerCursor: null,
+      }),
     );
 
     expect(ids(selectActiveTimelineMessages(testRootState(next), '1'))).toEqual(['1', '2']);
@@ -46,17 +51,27 @@ describe('messages slice canonical reducers', () => {
         chatId: '1',
         targetMessageId: '2',
         messages: [testMessage('1'), testMessage('2')],
-        nextCursor: null,
-        prevCursor: '2',
+        olderCursor: null,
+        newerCursor: '2',
       }),
     );
     next = reducer(
       next,
-      refreshLatest({ chatId: '1', messages: [testMessage('4'), testMessage('5')], nextCursor: '4', prevCursor: null }),
+      refreshLatest({
+        chatId: '1',
+        messages: [testMessage('4'), testMessage('5')],
+        olderCursor: '4',
+        newerCursor: null,
+      }),
     );
     next = reducer(
       next,
-      refreshLatest({ chatId: '1', messages: [testMessage('3'), testMessage('4')], nextCursor: '3', prevCursor: null }),
+      refreshLatest({
+        chatId: '1',
+        messages: [testMessage('3'), testMessage('4')],
+        olderCursor: '3',
+        newerCursor: null,
+      }),
     );
 
     expect(segmentIds(next)).toEqual([
@@ -69,7 +84,7 @@ describe('messages slice canonical reducers', () => {
   it('preserves and reconciles optimistic messages across latest refreshes', () => {
     let next = reducer(
       undefined,
-      refreshLatest({ chatId: '1', messages: [testMessage('10')], nextCursor: '10', prevCursor: null }),
+      refreshLatest({ chatId: '1', messages: [testMessage('10')], olderCursor: '10', newerCursor: null }),
     );
     next = addOptimistic(next, testOptimisticMessage('client-11'));
     next = reducer(
@@ -77,8 +92,8 @@ describe('messages slice canonical reducers', () => {
       refreshLatest({
         chatId: '1',
         messages: [testMessage('10'), testMessage('11', 'client-11')],
-        nextCursor: '10',
-        prevCursor: null,
+        olderCursor: '10',
+        newerCursor: null,
       }),
     );
 
@@ -92,8 +107,8 @@ describe('messages slice canonical reducers', () => {
       refreshLatest({
         chatId: '1',
         messages: [testMessage('20'), testMessage('21')],
-        nextCursor: '20',
-        prevCursor: null,
+        olderCursor: '20',
+        newerCursor: null,
       }),
     );
     next = reducer(
@@ -102,8 +117,8 @@ describe('messages slice canonical reducers', () => {
         chatId: '1',
         targetMessageId: '10',
         messages: [testMessage('9'), testMessage('10'), testMessage('11')],
-        nextCursor: '9',
-        prevCursor: '11',
+        olderCursor: '9',
+        newerCursor: '11',
       }),
     );
 
@@ -121,8 +136,8 @@ describe('messages slice canonical reducers', () => {
         chatId: '1',
         targetMessageId: '10',
         messages: [testMessage('8'), testMessage('9')],
-        nextCursor: '8',
-        prevCursor: '9',
+        olderCursor: '8',
+        newerCursor: '9',
       }),
     );
 
@@ -137,8 +152,8 @@ describe('messages slice canonical reducers', () => {
         chatId: '1',
         targetMessageId: '10',
         messages: [testMessage('10'), testMessage('11')],
-        nextCursor: '10',
-        prevCursor: null,
+        olderCursor: '10',
+        newerCursor: null,
       }),
     );
     next = reducer(
@@ -147,7 +162,7 @@ describe('messages slice canonical reducers', () => {
         chatId: '1',
         anchorMessageId: '10',
         messages: [testMessage('9'), testMessage('10'), testMessage('12')],
-        nextCursor: '9',
+        olderCursor: '9',
       }),
     );
 
@@ -161,8 +176,8 @@ describe('messages slice canonical reducers', () => {
         chatId: '1',
         targetMessageId: '10',
         messages: [testMessage('9'), testMessage('10')],
-        nextCursor: '9',
-        prevCursor: '10',
+        olderCursor: '9',
+        newerCursor: '10',
       }),
     );
     next = reducer(
@@ -170,8 +185,8 @@ describe('messages slice canonical reducers', () => {
       refreshLatest({
         chatId: '1',
         messages: [testMessage('13'), testMessage('14')],
-        nextCursor: '13',
-        prevCursor: null,
+        olderCursor: '13',
+        newerCursor: null,
       }),
     );
     next = reducer(
@@ -180,7 +195,7 @@ describe('messages slice canonical reducers', () => {
         chatId: '1',
         anchorMessageId: '10',
         messages: [testMessage('11'), testMessage('12'), testMessage('13')],
-        prevCursor: null,
+        newerCursor: null,
       }),
     );
 
@@ -196,8 +211,8 @@ describe('messages slice canonical reducers', () => {
         chatId: '1',
         targetMessageId: '10',
         messages: [testMessage('9'), testMessage('10'), testMessage('11')],
-        nextCursor: '9',
-        prevCursor: '11',
+        olderCursor: '9',
+        newerCursor: '11',
       }),
     );
     next = reducer(next, applyRealtimeMessage({ chatId: '1', message: testMessage('20') }));
@@ -213,8 +228,8 @@ describe('messages slice canonical reducers', () => {
         chatId: '1',
         targetMessageId: '10',
         messages: [testMessage('8'), testMessage('9')],
-        nextCursor: '8',
-        prevCursor: null,
+        olderCursor: '8',
+        newerCursor: null,
       }),
     );
     next = reducer(next, applyRealtimeMessage({ chatId: '1', message: testMessage('11') }));
@@ -229,8 +244,8 @@ describe('messages slice canonical reducers', () => {
       refreshLatest({
         chatId: '1',
         messages: [testMessage('10'), testMessage('12')],
-        nextCursor: '10',
-        prevCursor: null,
+        olderCursor: '10',
+        newerCursor: null,
       }),
     );
     next = reducer(next, applyRealtimeMessage({ chatId: '1', message: testMessage('11') }));
@@ -241,7 +256,7 @@ describe('messages slice canonical reducers', () => {
   it('dedupes API confirmation and later websocket echo through production events', () => {
     let next = reducer(
       undefined,
-      refreshLatest({ chatId: '1', messages: [testMessage('10')], nextCursor: '10', prevCursor: null }),
+      refreshLatest({ chatId: '1', messages: [testMessage('10')], olderCursor: '10', newerCursor: null }),
     );
     next = addOptimistic(next, testOptimisticMessage('client-11'));
     next = reducer(
@@ -272,7 +287,7 @@ describe('messages slice canonical reducers', () => {
   it('confirms optimistic messages through the public reducer action', () => {
     let next = reducer(
       undefined,
-      refreshLatest({ chatId: '1', messages: [testMessage('10')], nextCursor: '10', prevCursor: null }),
+      refreshLatest({ chatId: '1', messages: [testMessage('10')], olderCursor: '10', newerCursor: null }),
     );
     next = addOptimistic(next, testOptimisticMessage('client-11'));
     next = reducer(
@@ -287,7 +302,7 @@ describe('messages slice canonical reducers', () => {
   it('marks optimistic messages as failed with the current fallback representation', () => {
     let next = reducer(
       undefined,
-      refreshLatest({ chatId: '1', messages: [testMessage('10')], nextCursor: '10', prevCursor: null }),
+      refreshLatest({ chatId: '1', messages: [testMessage('10')], olderCursor: '10', newerCursor: null }),
     );
     next = addOptimistic(next, testOptimisticMessage('client-failed'));
     next = reducer(next, markOptimisticFailed({ chatId: '1', clientGeneratedId: 'client-failed' }));
@@ -310,8 +325,8 @@ describe('messages slice canonical reducers', () => {
       refreshLatest({
         chatId: '1',
         messages: [testMessage('10'), testMessage('11')],
-        nextCursor: null,
-        prevCursor: null,
+        olderCursor: null,
+        newerCursor: null,
       }),
     );
     next = reducer(
@@ -319,8 +334,8 @@ describe('messages slice canonical reducers', () => {
       refreshLatest({
         chatId: '1_thread_10',
         messages: [testMessage('12', 'client-12', { replyRootId: '10', replyToMessage })],
-        nextCursor: null,
-        prevCursor: null,
+        olderCursor: null,
+        newerCursor: null,
       }),
     );
     next = reducer(

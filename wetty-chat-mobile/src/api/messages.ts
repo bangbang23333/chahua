@@ -138,8 +138,8 @@ export function mentionToUser(mentions: MentionInfo[] | undefined, uid: number):
 
 export interface ListMessagesResponse {
   messages: MessageResponse[];
-  nextCursor: string | null;
-  prevCursor?: string | null;
+  olderCursor: string | null;
+  newerCursor: string | null;
 }
 
 export interface SearchMessagesResponse {

@@ -231,17 +231,17 @@ export function useConversationTimeline({
       getMessages(chatId, threadId ? { threadId } : undefined)
         .then((res) => {
           const list = res.data.messages ?? [];
-          const nextCursor = res.data.nextCursor ?? null;
-          const prevCursor = null;
+          const olderCursor = res.data.olderCursor ?? null;
+          const newerCursor = null;
           const currentState = store.getState();
           const currentMessages = selectActiveTimelineMessages(currentState, storeChatId);
-          const currentNextCursor = selectOlderAnchor(currentState, storeChatId);
-          const currentPrevCursor = selectNewerAnchor(currentState, storeChatId);
+          const currentOlderCursor = selectOlderAnchor(currentState, storeChatId);
+          const currentNewerCursor = selectNewerAnchor(currentState, storeChatId);
           const shouldResetAnchor =
             forceReopen ||
             !areMessageListsEquivalent(currentMessages, list) ||
-            nextCursor !== currentNextCursor ||
-            prevCursor !== currentPrevCursor;
+            olderCursor !== currentOlderCursor ||
+            newerCursor !== currentNewerCursor;
 
           if (import.meta.env.DEV) {
             console.log('[Conversation] fetchLatestWindow:resolved', {
@@ -252,8 +252,8 @@ export function useConversationTimeline({
               fetchedCount: list.length,
               firstMessageId: list[0]?.id ?? null,
               lastMessageId: list[list.length - 1]?.id ?? null,
-              nextCursor,
-              prevCursor,
+              olderCursor,
+              newerCursor,
               currentMessageCount: currentMessages.length,
               currentFirstMessageId: currentMessages[0]?.id ?? null,
               currentLastMessageId: currentMessages[currentMessages.length - 1]?.id ?? null,
@@ -270,7 +270,7 @@ export function useConversationTimeline({
             lastFetchedId: list[list.length - 1]?.id ?? null,
           });
 
-          dispatch(refreshLatest({ chatId: storeChatId, messages: list, nextCursor, prevCursor }));
+          dispatch(refreshLatest({ chatId: storeChatId, messages: list, olderCursor, newerCursor }));
           dispatch(setTimelineMode({ chatId: storeChatId, mode: { type: 'latest' } }));
 
           if (shouldResetAnchor) {
@@ -290,7 +290,7 @@ export function useConversationTimeline({
             storeChatId,
             error: err.message,
           });
-          dispatch(resetChat({ chatId: storeChatId, messages: [], nextCursor: null, prevCursor: null }));
+          dispatch(resetChat({ chatId: storeChatId, messages: [], olderCursor: null, newerCursor: null }));
           resetAnchor(initialResumeMessageId);
           showToast(err.message || t`Failed to load messages`);
         });
@@ -315,8 +315,8 @@ export function useConversationTimeline({
       getMessages(chatId, { around: pendingResumeMessageId, max: 50, threadId })
         .then((res) => {
           const list = res.data.messages ?? [];
-          const nextCursor = res.data.nextCursor ?? null;
-          const prevCursor = res.data.prevCursor ?? null;
+          const olderCursor = res.data.olderCursor ?? null;
+          const newerCursor = res.data.newerCursor ?? null;
           const containsTarget = list.some((message) => message.id === pendingResumeMessageId);
           logTimelineDiagnostic('initial-around-response', {
             chatId,
@@ -327,16 +327,16 @@ export function useConversationTimeline({
             firstId: list[0]?.id ?? null,
             lastId: list[list.length - 1]?.id ?? null,
             containsTarget,
-            nextCursor,
-            prevCursor,
+            olderCursor,
+            newerCursor,
           });
           dispatch(
             insertAround({
               chatId: storeChatId,
               targetMessageId: pendingResumeMessageId,
               messages: list,
-              nextCursor,
-              prevCursor,
+              olderCursor,
+              newerCursor,
             }),
           );
           logTimelineDiagnostic('initial-around-store-snapshot', {
@@ -345,7 +345,7 @@ export function useConversationTimeline({
             threadId: threadId ?? null,
             requestedAroundId: pendingResumeMessageId,
             containsTarget,
-            responseReachedLatest: prevCursor === null,
+            responseReachedLatest: newerCursor === null,
             snapshot: collectTimelineSnapshot(store.getState(), storeChatId),
           });
           if (containsTarget) {
@@ -411,7 +411,7 @@ export function useConversationTimeline({
             fetchedCount: list.length,
             oldestId: list[0]?.id ?? null,
             newestId: list[list.length - 1]?.id ?? null,
-            nextCursor: res.data.nextCursor ?? null,
+            olderCursor: res.data.olderCursor ?? null,
           });
         }
         dispatch(
@@ -419,7 +419,7 @@ export function useConversationTimeline({
             chatId: storeChatId,
             anchorMessageId: cursor,
             messages: list,
-            nextCursor: res.data.nextCursor ?? null,
+            olderCursor: res.data.olderCursor ?? null,
           }),
         );
         loadingMoreRef.current = false;
@@ -434,21 +434,21 @@ export function useConversationTimeline({
 
   const loadNewer = useCallback(() => {
     const st = store.getState();
-    const prevCursor = selectNewerAnchor(st, storeChatId);
-    if (!chatId || prevCursor == null || loadingNewerRef.current) return;
+    const newerCursor = selectNewerAnchor(st, storeChatId);
+    if (!chatId || newerCursor == null || loadingNewerRef.current) return;
     const gen = selectChatGeneration(st, storeChatId);
     loadingNewerRef.current = true;
     setLoadingNewer(true);
-    getMessages(chatId, { after: prevCursor, max: 50, threadId })
+    getMessages(chatId, { after: newerCursor, max: 50, threadId })
       .then((res) => {
         if (selectChatGeneration(store.getState(), storeChatId) !== gen) return;
         const list = res.data.messages ?? [];
         dispatch(
           insertAfterAnchor({
             chatId: storeChatId,
-            anchorMessageId: prevCursor,
+            anchorMessageId: newerCursor,
             messages: list,
-            prevCursor: res.data.prevCursor ?? null,
+            newerCursor: res.data.newerCursor ?? null,
           }),
         );
       })
@@ -505,8 +505,8 @@ export function useConversationTimeline({
               chatId: storeChatId,
               targetMessageId: messageId,
               messages: list,
-              nextCursor: res.data.nextCursor ?? null,
-              prevCursor: res.data.prevCursor ?? null,
+              olderCursor: res.data.olderCursor ?? null,
+              newerCursor: res.data.newerCursor ?? null,
             }),
           );
           setInitialAnchor((currentAnchor) => ({

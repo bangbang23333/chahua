@@ -232,8 +232,8 @@ listenerMiddleware.startListening({
           refreshLatest({
             chatId,
             messages: list,
-            nextCursor: res.data.nextCursor ?? null,
-            prevCursor: null,
+            olderCursor: res.data.olderCursor ?? null,
+            newerCursor: null,
           }),
         );
       } catch {

@@ -104,17 +104,17 @@ export async function syncApp() {
                 chatId: storeChatId,
                 anchorMessageId: lastMsg.id,
                 messages: messagesRes.data.messages,
-                prevCursor: messagesRes.data.prevCursor ?? null,
+                newerCursor: messagesRes.data.newerCursor ?? null,
               }),
             );
-          } else if (messagesRes.data.prevCursor !== undefined) {
-            // No new messages, but update the prev cursor just in case
+          } else if (messagesRes.data.newerCursor !== undefined) {
+            // No new messages, but update the newer cursor just in case
             store.dispatch(
               insertAfterAnchor({
                 chatId: storeChatId,
                 anchorMessageId: lastMsg.id,
                 messages: [],
-                prevCursor: messagesRes.data.prevCursor ?? null,
+                newerCursor: messagesRes.data.newerCursor ?? null,
               }),
             );
           }

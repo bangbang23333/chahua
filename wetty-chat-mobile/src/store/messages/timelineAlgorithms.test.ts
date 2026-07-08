@@ -12,13 +12,13 @@ import { ids, testMessage } from './testUtils';
 function segment(
   start: number,
   end: number,
-  nextCursor: string | null = `${start}`,
-  prevCursor: string | null = `${end}`,
+  olderCursor: string | null = `${start}`,
+  newerCursor: string | null = `${end}`,
 ): MessageSegment {
   const result = makeServerSegment(
     Array.from({ length: end - start + 1 }, (_item, index) => testMessage(String(start + index))),
-    nextCursor,
-    prevCursor,
+    olderCursor,
+    newerCursor,
   );
   if (!result) throw new Error('Expected non-empty test segment');
   return result;
