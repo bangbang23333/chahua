@@ -19,6 +19,8 @@ context.md
 /ci-deploy/
 .geminiignore
 .playwright-mcp
+.superpowers
+superpowers
 
 # local env files
 *.log
