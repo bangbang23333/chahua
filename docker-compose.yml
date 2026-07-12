@@ -16,7 +16,7 @@ services:
       POSTGRES_USER: wetty_chat
       POSTGRES_PASSWORD: NIM1gs7unjbQumYD
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
   meilisearch:
     restart: unless-stopped
     image: getmeili/meilisearch:v1.37
